@@ -1,0 +1,15 @@
+Software	Version	Availability
+HiC-Pro	2.11.0-beta	https://github.com/nservant/HiC-Pro
+HiCExplorer	3	https://hicexplorer.readthedocs.io/en/latest/content/installation.html
+HiCcompare	1.6.0	https://bioconductor.org/packages/release/bioc/html/HiCcompare.html
+HOMER	v4.10	http://homer.ucsd.edu/homer/index.html
+HiC-Plotter	0.8.1	https://github.com/kcakdemir/HiCPlotter
+Seqmonk	v1.42.0	https://www.bioinformatics.babraham.ac.uk/projects/seqmonk/
+Bowtie2	2.3.0	http://bowtie-bio.sourceforge.net/bowtie2/index.shtml
+FIMO	4.12.0	http://meme-suite.org/doc/download.html
+IGV	2.3.93	https://software.broadinstitute.org/software/igv/
+Deeptools	2.5.4	https://deeptools.readthedocs.io/en/develop/
+DESeq2	1.24.0	https://bioconductor.org/packages/release/bioc/html/DESeq2.html
+Salmon	0.10.2	https://combine-lab.github.io/salmon/
+R	3.4.4	https://cran.r-project.org/
+R studio	1.1.383	https://www.rstudio.com/products/rstudio/download/

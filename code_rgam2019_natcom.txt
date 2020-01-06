@@ -1,0 +1,360 @@
+
+##########################################################################
+Supplementary Code
+##########################################################################
+
+##########################################################################
+Generation of mutant genomes in silico. 
+
+To map Hi-C reads from mutant clones without apparent gaps we builded mutant 
+genomes in silico. To create in silico genomes:
+
+1.1 Download  chromosome sequences in fasta format for the dm6 genome version 
+of Drosophila melanogaster from UCSC http://hgdownload.soe.ucsc.edu/goldenPath/dm6/bigZips/ 
+
+1.2 Notch is located at the chromosome X. Replace the reference sequence 
+of the 5’ intergenic region or of the intronic enhancer with the mutant sequences 
+provided in the file sequences_used_for_in_silico_genome_generation.txt. Alternatively, 
+find and deleted the following genomic sequences (Deleted in CRISPR mutants) from the 
+fasta sequence of the X chromosome. 
+
+chrX:3133987-3134751	deleted in mut-755
+chrX:3134506-3134848	deleted in mut-343
+chrX:3134571-3134743	deleted in mut-183
+chrX:3134751-3134854	deleted in mut-102
+chrX:3160677-3163208	deleted in mut-enhancer
+
+
+1.3 A single fasta file was created with the sequence of the mutant X chromosome 
+and the reference fasta sequences for the rest of the chromosomes.
+
+cat *.fa > in_silico_genome.fa
+
+In silico genomes were used to create specific bowtie2 indexes
+
+bowtie2-build in_silico_genome.fa dm6_mutant_genome
+
+1.4 To create a mutant specific in silico genome digestion for the MboI enzyme 
+we used the script digest_genome.py from HiC-Pro version 2.11.0-beta
+
+digest_genome.py -r dpnii -o MboI_mutant.bed in_silico_genome.fa
+
+*Reference sequences and mutant sequences are provided as a txt file: sequences_used_for_in_silico_genome_generation
+
+##############################################################################################
+
+Analysis of Virtual-4C
+
+Genomic coordinates of viewpoints used in this study:
+
+Gene/Region	chr	start	end
+CR45482	chrX	4047539	4049236
+Iva	chrX	3964800	3965800
+Vap33a	chrX	3948599	3949711
+dnc	chrX	3175000	3176999
+Kirre-full	chrX	2740002	2740997
+Kirre-med	chrX	2972457	2989875
+N-exon-7	chrX	3169000	3171000
+N-intron-5	chrX	3162000	3163200
+N-5UTR	chrX	3134870	3135674
+N-intron-2	chrX	3151277	3152335
+N-intron-1	chrX	3143930	3145210
+N-1mb	chrX	4070596	4076632
+N-end	chrX	3172525	3173616
+N-internal-prom	chrX	3164499	3164999
+
+
+To create virtual-4C profiles of regions of interest we used HiC-Pro script make_viewpoints.py
+The input of make_viewpints.py are two files: a valid-pairs file and a txt file with the 
+genomic coordinates of the viewpoint of interest. For comparisons between wild-type and mutant
+interaction profiles the number of valid-pairs were scaled down to the smallest number of valid-pairs
+among all conditions (mutant-183).
+
+To calculate percentage of valid-pairs with a view-point of interest at a specific genomic region
+
+##################################CODE##################################
+#Run the following code in R
+
+library(dplyr)
+library(ggplot2)
+library(forcats)
+
+#The datasets used were scaled down to same number of valid reads for the X chromosome
+#Output files from make_viewpoints.py are provided with this code and located in the folder 
+#virtual4c_input. In the following code replace "output_make_viewpoints.py" with 
+#the name of input files from virtual4c_analysis_input.
+
+#Run the following for each viewpoint dataset. As an example, variables are named as to 
+analyze the interaction profile of the 5UTR of Notch. 
+
+#Read HiCPro ouput file from make_viewpints.py
+
+virtual4C_5UTR_wt<-read.delim("output_make_viewpoints.py", header=FALSE)
+virtual4C_5UTR_102<-read.delim("output_make_viewpoints.py", header=FALSE)
+virtual4C_5UTR_183<-read.delim("output_make_viewpoints.py", header=FALSE)
+virtual4C_5UTR_343<-read.delim("output_make_viewpoints.py", header=FALSE)
+virtual4C_5UTR_755<-read.delim("output_make_viewpoints.py", header=FALSE)
+virtual4C_5UTR_enh<-read.delim("output_make_viewpoints.py", header=FALSE)
+
+#Coordinates for TADs of interest
+#kirre domain-2
+#chrX:2950001-3134000
+
+#Notch-D1
+#chrX:3134001-3165000
+
+#Notch-D2
+#chrX:3165001-3174000
+
+#dnc-domain
+#chrX:3174001-3340000
+
+#Percentage of valid-pairs with a view-point of interest for wt
+
+kirre_wt<-subset(virtual4C_5UTR_wt,(V1=='chrX' & V2>=2950001 & V3<=3134000)) #subset the file for the genomic region of interest
+D1_wt<-subset(virtual4C_5UTR_wt,(V1=='chrX' & V2>=3134001 & V3<=3165000))
+D2_wt<-subset(virtual4C_5UTR_wt,(V1=='chrX' & V2>=3165001 & V3<=3174000))
+dnc_wt<-subset(virtual4C_5UTR_wt,(V1=='chrX' & V2>=3174001 & V3<=3340000))
+
+sum_wt<-sum(kirre_wt$V4,D1_wt$V4,D2_wt$V4,dnc_wt$V4)   #total of valid-reads with view-point of interest in the genomic region from kirre to dnc
+percent_kirre_wt<-round((sum(kirre_wt$V4)/sum_wt)*100) #percentage of valid-reads with view-point of interest in the genomic region of interest
+percent_D1_wt<-round((sum(D1_wt$V4)/sum_wt)*100)
+percent_D2_wt<-round((sum(D2_wt$V4)/sum_wt)*100)
+percent_dnc_wt<-round((sum(dnc_wt$V4)/sum_wt)*100)
+
+#print percentage of valid-reads with view-point of interest in the genomic region of interest
+
+percent_kirre_wt
+percent_D1_wt
+percent_D2_wt
+percent_dnc_wt
+
+#Percentage of valid-pairs with a view-point of interest for 102
+
+kirre_102<-subset(virtual4C_5UTR_102,(V1=='chrX' & V2>=2950001 & V3<=3134000))
+D1_102<-subset(virtual4C_5UTR_102,(V1=='chrX' & V2>=3134001 & V3<=3165000))
+D2_102<-subset(virtual4C_5UTR_102,(V1=='chrX' & V2>=3165001 & V3<=3174000))
+dnc_102<-subset(virtual4C_5UTR_102,(V1=='chrX' & V2>=3174001 & V3<=3340000))
+
+sum_102<-sum(kirre_102$V4,D1_102$V4,D2_102$V4,dnc_102$V4)
+percent_kirre_102<-round((sum(kirre_102$V4)/sum_102)*100)
+percent_D1_102<-round((sum(D1_102$V4)/sum_102)*100)
+percent_D2_102<-round((sum(D2_102$V4)/sum_102)*100)
+percent_dnc_102<-round((sum(dnc_102$V4)/sum_102)*100)
+
+percent_kirre_102
+percent_D1_102
+percent_D2_102
+percent_dnc_102
+
+#Percentage of valid-pairs with a view-point of interest for 183
+
+kirre_183<-subset(virtual4C_5UTR_183,(V1=='chrX' & V2>=2950001 & V3<=3134000))
+D1_183<-subset(virtual4C_5UTR_183,(V1=='chrX' & V2>=3134001 & V3<=3165000))
+D2_183<-subset(virtual4C_5UTR_183,(V1=='chrX' & V2>=3165001 & V3<=3174000))
+dnc_183<-subset(virtual4C_5UTR_183,(V1=='chrX' & V2>=3174001 & V3<=3340000))
+
+sum_183<-sum(kirre_183$V4,D1_183$V4,D2_183$V4,dnc_183$V4)
+percent_kirre_183<-round((sum(kirre_183$V4)/sum_183)*100)
+percent_D1_183<-round((sum(D1_183$V4)/sum_183)*100)
+percent_D2_183<-round((sum(D2_183$V4)/sum_183)*100)
+percent_dnc_183<-round((sum(dnc_183$V4)/sum_183)*100)
+
+percent_kirre_183
+percent_D1_183
+percent_D2_183
+percent_dnc_183
+
+#Percentage of valid-pairs with a view-point of interest for 343
+
+kirre_343<-subset(virtual4C_5UTR_343,(V1=='chrX' & V2>=2950001 & V3<=3134000))
+D1_343<-subset(virtual4C_5UTR_343,(V1=='chrX' & V2>=3134001 & V3<=3165000))
+D2_343<-subset(virtual4C_5UTR_343,(V1=='chrX' & V2>=3165001 & V3<=3174000))
+dnc_343<-subset(virtual4C_5UTR_343,(V1=='chrX' & V2>=3174001 & V3<=3340000))
+
+sum_343<-sum(kirre_343$V4,D1_343$V4,D2_343$V4,dnc_343$V4)
+percent_kirre_343<-round((sum(kirre_343$V4)/sum_343)*100)
+percent_D1_343<-round((sum(D1_343$V4)/sum_343)*100)
+percent_D2_343<-round((sum(D2_343$V4)/sum_343)*100)
+percent_dnc_343<-round((sum(dnc_343$V4)/sum_343)*100)
+
+percent_kirre_343
+percent_D1_343
+percent_D2_343
+percent_dnc_343
+
+#Percentage of valid-pairs with a view-point of interest for 755
+
+kirre_755<-subset(virtual4C_5UTR_755,(V1=='chrX' & V2>=2950001 & V3<=3134000))
+D1_755<-subset(virtual4C_5UTR_755,(V1=='chrX' & V2>=3134001 & V3<=3165000))
+D2_755<-subset(virtual4C_5UTR_755,(V1=='chrX' & V2>=3165001 & V3<=3174000))
+dnc_755<-subset(virtual4C_5UTR_755,(V1=='chrX' & V2>=3174001 & V3<=3340000))
+
+sum_755<-sum(kirre_755$V4,D1_755$V4,D2_755$V4,dnc_755$V4)
+percent_kirre_755<-round((sum(kirre_755$V4)/sum_755)*100)
+percent_D1_755<-round((sum(D1_755$V4)/sum_755)*100)
+percent_D2_755<-round((sum(D2_755$V4)/sum_755)*100)
+percent_dnc_755<-round((sum(dnc_755$V4)/sum_755)*100)
+
+percent_kirre_755
+percent_D1_755
+percent_D2_755
+percent_dnc_755
+
+#Percentage of valid-pairs with a view-point of interest for enh
+
+kirre_enh<-subset(virtual4C_5UTR_enhancer,(V1=='chrX' & V2>=2950001 & V3<=3134000))
+D1_enh<-subset(virtual4C_5UTR_enhancer,(V1=='chrX' & V2>=3134001 & V3<=3165000))
+D2_enh<-subset(virtual4C_5UTR_enhancer,(V1=='chrX' & V2>=3165001 & V3<=3174000))
+dnc_enh<-subset(virtual4C_5UTR_enhancer,(V1=='chrX' & V2>=3174001 & V3<=3340000))
+
+sum_enh<-sum(kirre_enh$V4,D1_enh$V4,D2_enh$V4,dnc_enh$V4)
+percent_kirre_enh<-round((sum(kirre_enh$V4)/sum_enh)*100)
+percent_D1_enh<-round((sum(D1_enh$V4)/sum_enh)*100)
+percent_D2_enh<-round((sum(D2_enh$V4)/sum_enh)*100)
+percent_dnc_enh<-round((sum(dnc_enh$V4)/sum_enh)*100)
+
+percent_kirre_enh
+percent_D1_enh
+percent_D2_enh
+percent_dnc_enh
+
+#END of Analysis of Virtual-4C
+
+##############################################################################################
+
+Hi-C counts from wild-type and mutant clones for specific TADs
+
+To calculate the number of Hi-C counts contained within specific TADs or the number of Hi-C 
+between different TADs, we used as input to a custom R script (See below) ICE normalized matrices
+from HiC-Pro and the bed files associated to sparse matrices as provided by HiC-Pro. We have 
+provided raw matrices of different resoltions as proccessed files in the GEO
+superserie associated with this study as well as bed files. Raw matrices should be normalized 
+with HiC-Pro and then used as input for this code.
+
+In the code, the bed file is just of interest if user would like to obtain the bin numer associated
+with the genomic regions of interest to analyze. We provide the coordinates and bin numbers for the 
+regions analyzed in our manuscript. User then, could just change the V1 and V2 values according to 
+the bin numbers of the regions to analyze. 
+
+Region/TAD	Resolution of matrix	Genomic coordinates	bin1	bin2
+Notch locus	5kb	chrX:3134001-3175000	22698	22704
+dnc	5kb	chrX:3174001-3340000	22706	22738
+kirre domain-1	5kb	chrX:2742001-2950000	22620	22660
+kirre domain-2	5kb	chrX:2950001-3134000	22661	22697
+Notch-D1	1kb	chrX:3134001-3165000	113477	113506
+Notch-D2	1kb	chrX:3165001-3174000	113508	113515
+
+
+##################################CODE##################################
+#Run the following code in R
+#Run this code for each quantification of interest. 
+#IMPORTANT: change each time the bin coordinates of the regions to analyze 
+#As an example, variables names make reference to a type of mutant or wt
+#and to the resolution of input matrix. 
+
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library("RColorBrewer")
+
+#Load ICE matrices
+wt_1000_iced <- read.delim("iced.matrix", header=FALSE)
+`102_1000_iced` <- read.delim("iced.matrix", header=FALSE)
+`183_1000_iced` <- read.delim("iced.matrix", header=FALSE)
+`343_1000_iced` <- read.delim("iced.matrix", header=FALSE)
+`755_1000_iced` <- read.delim("iced.matrix", header=FALSE)
+enhancer_1000_iced <- read.delim("iced.matrix", header=FALSE)
+
+#Load bed file with genomic positions of the bins associated to the sparse matrix 
+wt_1000_abs <- read.delim("file.bed", header=FALSE)
+
+#Select the bins corresponding to the region of interest.  
+#In this cse Notch-D1
+notch_bins<-subset(wt_1000_abs,(V1=="chrX" & V2>=3134001 & V3<=3165000))
+head(notch_bins)
+tail(notch_bins)
+
+#First bin of interest is 113477
+#Second bin of interest is 113506
+
+#For quantification select just bins outside the diagonal 
+wt_iced_1kb_notch<-subset(wt_1000_iced,(V1>=113477 & V1<=113506 & V2>=113477 & V2<=113506 & V1!=V2)) #will subset matrix for bins that span the genomic coordinates of the Notch Domain 1 at 1kb resolution. 
+nrow(wt_iced_1kb_notch)
+wt_iced_1kb_notch$norm<-wt_iced_1kb_notch$V3
+wt_iced_1kb_notch$type<-"wt"
+
+mut_102_iced_1kb_notch<-subset(`102_1000_iced` ,(V1>=113477 & V1<=113506 & V2>=113477 & V2<=113506 & V1!=V2))
+nrow(mut_102_iced_1kb_notch)
+mut_102_iced_1kb_notch$norm<-mut_102_iced_1kb_notch$V3
+mut_102_iced_1kb_notch$type<-"102"
+
+mut_183_iced_1kb_notch<-subset(`183_1000_iced` ,(V1>=113477 & V1<=113506 & V2>=113477 & V2<=113506 & V1!=V2))
+nrow(mut_183_iced_1kb_notch)
+mut_183_iced_1kb_notch$norm<-mut_183_iced_1kb_notch$V3
+mut_183_iced_1kb_notch$type<-"183"
+
+mut_343_iced_1kb_notch<-subset(`343_1000_iced` ,(V1>=113477 & V1<=113506 & V2>=113477 & V2<=113506 & V1!=V2))
+nrow(mut_343_iced_1kb_notch)
+mut_343_iced_1kb_notch$norm<-mut_343_iced_1kb_notch$V3
+mut_343_iced_1kb_notch$type<-"343"
+
+mut_755_iced_1kb_notch<-subset(`755_1000_iced` ,(V1>=113477 & V1<=113506 & V2>=113477 & V2<=113506 & V1!=V2))
+nrow(mut_755_iced_1kb_notch)
+mut_755_iced_1kb_notch$norm<-mut_755_iced_1kb_notch$V3
+mut_755_iced_1kb_notch$type<-"755"
+
+mut_enh_iced_1kb_notch<-subset(enhancer_1000_iced ,(V1>=113477 & V1<=113506 & V2>=113477 & V2<=113506 & V1!=V2))
+nrow(mut_enh_iced_1kb_notch)
+mut_enh_iced_1kb_notch$norm<-mut_enh_iced_1kb_notch$V3
+mut_enh_iced_1kb_notch$type<-"enh"
+
+data_notch_1kb<-rbind(wt_iced_1kb_notch,
+                      mut_102_iced_1kb_notch,
+                      mut_183_iced_1kb_notch,
+                      mut_343_iced_1kb_notch,
+                      mut_755_iced_1kb_notch,
+                      mut_enh_iced_1kb_notch)
+
+#Boxplot of Hi-C counts 
+
+ggplot(data_notch_1kb, aes(x=fct_inorder(type), y=V3, fill=type))+
+  geom_boxplot()
+
+wilcox.test(wt_iced_1kb_notch$V3, mut_102_iced_1kb_notch$V3)
+wilcox.test(wt_iced_1kb_notch$V3, mut_183_iced_1kb_notch$V3)
+wilcox.test(wt_iced_1kb_notch$V3, mut_343_iced_1kb_notch$V3)
+wilcox.test(wt_iced_1kb_notch$V3, mut_755_iced_1kb_notch$V3)
+wilcox.test(wt_iced_1kb_notch$V3, mut_enh_iced_1kb_notch$V3)
+
+
+#END Hi-C counts from wild-type and mutant clones for specific TADs
+
+##############################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
